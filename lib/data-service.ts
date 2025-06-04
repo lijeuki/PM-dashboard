@@ -5,6 +5,8 @@ export async function fetchProjects() {
   try {
     const response = await fetch("/api/projects")
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Projects API error:", errorText)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     const data = await response.json()
@@ -90,6 +92,8 @@ export async function fetchMandaysByProjectAndMonth(projectId: string, month: st
     const params = new URLSearchParams({ projectId, month, year })
     const response = await fetch(`/api/mandays?${params}`)
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Mandays API error:", errorText)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     return await response.json()
@@ -105,6 +109,8 @@ export async function fetchAggregatedMandaysByMonth(month: string, year: string)
     const params = new URLSearchParams({ projectId: "all", month, year })
     const response = await fetch(`/api/mandays?${params}`)
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Aggregated mandays API error:", errorText)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     const data = await response.json()
@@ -145,7 +151,7 @@ export async function fetchMonthlyMandayUsage(projectId: string, year: string) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`Error response from API: ${errorText}`)
+      console.error(`Monthly mandays API error: ${errorText}`)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
@@ -188,7 +194,7 @@ export async function fetchRoleChartData(projectId: string, month: string, year:
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`Error response from API: ${errorText}`)
+      console.error(`Role chart API error: ${errorText}`)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
@@ -274,6 +280,8 @@ export async function fetchLedgerTransactions(projectId: string) {
   try {
     const response = await fetch(`/api/ledger?projectId=${projectId}`)
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Ledger API error:", errorText)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     return await response.json()
@@ -356,6 +364,8 @@ export async function fetchProjectRoleRates(projectId: string) {
   try {
     const response = await fetch(`/api/role-rates?projectId=${projectId}`)
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Role rates API error:", errorText)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     return await response.json()
@@ -467,14 +477,21 @@ export async function triggerProjectFinancialsUpdate() {
 // Fetch project spending summary - UPDATED TO USE API ROUTE
 export async function fetchProjectSpendingSummary() {
   try {
+    console.log("Fetching project spending summary...")
     const response = await fetch("/api/spending-summary")
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      const errorText = await response.text()
+      console.error("Spending summary API error:", errorText)
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
     }
-    return await response.json()
-  } catch (error) {
+
+    const data = await response.json()
+    console.log("Spending summary data received:", data)
+    return data
+  } catch (error: any) {
     console.error("Error fetching project spending summary:", error)
-    return []
+    throw new Error(error.message || "Failed to fetch project spending summary")
   }
 }
 

@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { RefreshCw, Info } from "lucide-react"
+import { RefreshCw, Info, AlertCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useToast } from "@/hooks/use-toast"
 import { fetchProjectSpendingSummary, triggerProjectFinancialsUpdate } from "@/lib/data-service"
@@ -17,14 +18,20 @@ export function ProjectSpendingSummary() {
   const [summaryData, setSummaryData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const loadSummaryData = async () => {
     setLoading(true)
+    setError(null)
     try {
+      console.log("Loading spending summary data...")
       const data = await fetchProjectSpendingSummary()
-      setSummaryData(data)
-    } catch (error) {
+      console.log("Received spending summary data:", data)
+      setSummaryData(data || [])
+    } catch (error: any) {
       console.error("Error loading spending summary:", error)
+      setError(error.message || "Failed to load project spending summary")
+      setSummaryData([])
       toast({
         title: "Error",
         description: "Failed to load project spending summary.",
@@ -48,7 +55,7 @@ export function ProjectSpendingSummary() {
         title: "Update Successful",
         description: "Project financials have been updated successfully.",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating financials:", error)
       toast({
         title: "Update Failed",
@@ -58,6 +65,10 @@ export function ProjectSpendingSummary() {
     } finally {
       setUpdating(false)
     }
+  }
+
+  const handleRetry = () => {
+    loadSummaryData()
   }
 
   const getBurnRateStatus = (burnRate: number) => {
@@ -97,10 +108,18 @@ export function ProjectSpendingSummary() {
             </Tooltip>
           </TooltipProvider>
         </div>
-        <Button variant="outline" size="sm" onClick={handleUpdateFinancials} disabled={updating}>
-          <RefreshCw className="mr-2 h-4 w-4" />
-          {updating ? "Updating..." : "Update Financials"}
-        </Button>
+        <div className="flex gap-2">
+          {error && (
+            <Button variant="outline" size="sm" onClick={handleRetry}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={handleUpdateFinancials} disabled={updating}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            {updating ? "Updating..." : "Update Financials"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -109,6 +128,18 @@ export function ProjectSpendingSummary() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
+        ) : error ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Data</AlertTitle>
+            <AlertDescription>
+              {error}
+              <br />
+              <Button variant="outline" size="sm" onClick={handleRetry} className="mt-2">
+                Try Again
+              </Button>
+            </AlertDescription>
+          </Alert>
         ) : summaryData.length === 0 ? (
           <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
             <div className="text-center">
@@ -122,8 +153,8 @@ export function ProjectSpendingSummary() {
           <div className="space-y-4">
             <div className="rounded-md bg-muted p-4">
               <p className="text-sm">
-                <strong>Note:</strong> Total spent now includes both manday-based costs (mandays × role rates) and
-                direct debit transactions from the project ledger.
+                <strong>Note:</strong> Total spent includes both manday-based costs (mandays × role rates) and direct
+                debit transactions from the project ledger.
               </p>
             </div>
             <div className="overflow-x-auto">
